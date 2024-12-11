@@ -1,149 +1,118 @@
-import { useState, useEffect, useRef } from "react";
-import { motion, useAnimation } from "motion/react";
+import { useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Canvas, useThree } from "@react-three/fiber";
+import { Grid, OrbitControls } from "@react-three/drei";
+import * as THREE from "three";
 import type { Location } from "./types";
 import { getLocations } from "./api";
-import { useQuery } from "@tanstack/react-query";
-import car from "./assets/car.png";
+import F1CircuitMap from "./f1";
+
+function SceneModifier({ data }: { data: Location[] | undefined }) {
+  const { scene } = useThree();
+  const sphereRef = useRef<THREE.Mesh>(null);
+
+  useEffect(() => {
+    if (!data || data.length === 0) return;
+
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.5, 32, 32),
+      new THREE.MeshStandardMaterial({ color: "blue" })
+    );
+    sphereRef.current = sphere;
+    scene.add(sphere);
+
+    const updateInterval = 1; // 1 millisecond
+    let index = 0;
+
+    const intervalId = setInterval(() => {
+      index = (index + 1) % data.length; // Loop through data
+      const currentLocation = data[index];
+      if (currentLocation) {
+        sphere.position.set(
+          currentLocation.x / 1000,
+          currentLocation.z / 1000,
+          currentLocation.y / 1000
+        );
+      }
+    }, updateInterval);
+
+    return () => {
+      clearInterval(intervalId);
+      scene.remove(sphere);
+    };
+  }, [data, scene]);
+
+  return null;
+}
+
+// const data = JSON.parse(
+//   localStorage.getItem("mockLocations4") || ""
+// ) as Location[];
 
 export function App() {
-  // const rawData: Location[] = JSON.parse(
-  //   localStorage.getItem("mockLocations4") || "[]"
-  // );
-
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["locations"],
-    queryFn: () => {
-      const locations = localStorage.getItem("locations") || "";
+    queryFn: async () => {
+      const locations = localStorage.getItem("mockLocations4	") || "";
       if (locations) {
         const parsedLocations = JSON.parse(locations) as Location[];
-        // Take every 100th element when data is from localStorage
         return parsedLocations.sort(
           (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
         );
       }
-      return getLocations({ sessionKey: 9662, driverNumber: 4 });
+      const fetchedLocations = await getLocations({
+        sessionKey: 9654,
+        driverNumber: 55,
+      });
+      if (!locations) {
+        localStorage.setItem("locations", JSON.stringify(fetchedLocations));
+      }
+      return fetchedLocations;
     },
   });
 
-  if (!data) return null;
+  if (isLoading) {
+    return <div>isloading</div>;
+  }
 
-  // Filter data to include only points from 13:00 onwards
-  // const filteredData = rawData.filter((location) => {
-  //   const date = new Date(location.date);
-  //   return date.getHours() >= 13;
-  // });
-
-  return <AnimatedDot data={data} />;
-}
-
-type AnimatedDotProps = {
-  data: Location[];
-};
-
-function AnimatedDot({ data }: AnimatedDotProps) {
-  const controls = useAnimation();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1); // Playback speed
-  const pathRef = useRef<string>("M0 0"); // Store the path's `d` attribute
-
-  // Map dimensions
-  const mapWidth = 800;
-  const mapHeight = 600;
-
-  // Scale factors for zooming out and fitting within the map
-  // const xScale = Math.max(...data.map((d) => d.x)) || 1;
-  // const yScale = Math.max(...data.map((d) => d.y)) || 1;
-  const xScale = 10000;
-  const yScale = 10000;
-
-  useEffect(() => {
-    if (data.length === 0) return;
-
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % data.length);
-    }, 1000 / playbackSpeed);
-
-    return () => clearInterval(interval);
-  }, [data, playbackSpeed]);
-
-  useEffect(() => {
-    if (data.length > 0) {
-      const location = data[currentIndex];
-      const x = (location.x / xScale) * mapWidth;
-      // Invert the y coordinate for the dot to match the SVG path
-      const y = mapHeight - (location.y / yScale) * mapHeight;
-
-      controls.start({
-        x: x,
-        y: y,
-        transition: { duration: 0.01, ease: "easeInOut" },
-      });
-
-      // Update path using the original (non-inverted) coordinates
-      const prevPath = pathRef.current;
-      const newPoint = `${x},${(location.y / yScale) * mapHeight}`;
-      pathRef.current = `${prevPath} L${newPoint}`;
-    }
-  }, [currentIndex, data, controls]);
+  // console.log({ data, isLoading });
+  console.log({ data });
 
   return (
-    <div
-      className="inset-20 overflow-visible"
-      style={{
-        position: "relative",
-        width: mapWidth,
-        height: mapHeight,
-        border: "1px solid #ccc",
-      }}
-    >
-      <svg
-        className="overflow-visible"
+    <div className="h-screen w-screen">
+      <F1CircuitMap clusterRadius={300} locations={data}></F1CircuitMap>
+    </div>
+  );
+
+  return (
+    <div className="h-screen w-screen">
+      <Canvas camera={{ position: [5, 5, 5] }}>
+        <OrbitControls />
+        <Grid args={[100, 100]} />
+        <ambientLight intensity={0.1} />
+        <directionalLight position={[0, 0, 5]} color="red" />
+        {data && <SceneModifier data={data} />}
+      </Canvas>
+      <div
         style={{
           position: "absolute",
-          top: 0,
-          transform: "scaleY(-1)",
-          left: 0,
-          width: "100%",
-          height: "100%",
+          top: 10,
+          left: 10,
+          background: "rgba(0, 0, 0, 0.5)",
+          color: "white",
+          padding: "5px 10px",
+          borderRadius: "5px",
         }}
       >
-        <motion.path
-          d={pathRef.current}
-          fill="none"
-          stroke="blue"
-          strokeWidth="2"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-        />
-      </svg>
-      <div style={{ position: "absolute", top: 10, left: 10 }}>
-        <strong>Current Date:</strong>{" "}
-        {data[currentIndex]?.date || "No data available"}
-      </div>
-      <motion.img
-        src={car}
-        style={{
-          position: "absolute",
-          objectFit: "contain",
-          width: "20px",
-          height: "20px",
-        }}
-        animate={controls}
-      />
-      <div style={{ position: "absolute", bottom: 10, left: 10 }}>
-        <label htmlFor="speed">Playback Speed:</label>
-        <input
-          id="speed"
-          type="range"
-          min="0.1"
-          max="5000000"
-          step="0.1"
-          value={playbackSpeed}
-          onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-          style={{ marginLeft: "10px" }}
-        />
-        <span>{playbackSpeed.toFixed(1)}x</span>
+        <strong>Current Location:</strong>
+        {data && data.length > 0 && (
+          <>
+            <div>X: {data[0].x.toFixed(2)}</div>
+            <div>Z: {data[0].z.toFixed(2)}</div>
+            <div>Y: {data[0].y.toFixed(2)}</div>
+            <div>Current date: {data[0].date}</div>
+          </>
+        )}
       </div>
     </div>
   );
