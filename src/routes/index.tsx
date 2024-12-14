@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
 import miami from "../assets/miami.jpg";
 import monaco from "../assets/monaco.webp";
 import austria from "../assets/austria.jpg";
@@ -7,11 +7,9 @@ import hungary from "../assets/hungary.jpg";
 import azerbaijan from "../assets/azerbaijan.webp";
 import { Link } from "@tanstack/react-router";
 
-export const Route = createFileRoute('/')({
-    component: Home,
-  })
-
-
+export const Route = createFileRoute("/")({
+  component: Home,
+});
 
 const tracks = [
   { name: "Miami International Autodrome", img: miami, sessionKey: 9506 },
@@ -34,10 +32,10 @@ const tracks = [
   },
 ];
 
- function Home() {
+function Home() {
   return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="grid w-fit max-w-screen-xl gap-16 grid-cols-3">
+    <div className="flex lg:items-center pt-8 px-4 lg:justify-center lg:h-screen">
+      <div className="grid w-fit max-w-screen-xl gap-16 grid-cols-1 lg:grid-cols-3">
         {tracks.map((track) => {
           return (
             <Link
