@@ -34,8 +34,8 @@ const tracks = [
 
 function Home() {
   return (
-    <div className="flex lg:items-center pt-8 px-4 lg:justify-center lg:h-screen">
-      <div className="grid w-fit max-w-screen-xl gap-16 grid-cols-1 lg:grid-cols-3">
+    <div className="flex lg:items-center px-8 py-8 lg:justify-center lg:h-screen">
+      <div className="grid w-fit max-w-screen-xl lg:gap-16 gap-8 grid-cols-1 lg:grid-cols-3">
         {tracks.map((track) => {
           return (
             <Link
