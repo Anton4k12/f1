@@ -24,3 +24,10 @@ export type Location = {
   y: number;
   z: number;
 };
+
+export type OptimizedLocation = {
+  x: number;
+  y: number;
+  t: number;
+  n: number;
+};

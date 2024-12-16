@@ -1,32 +1,31 @@
-import { createFileRoute } from "@tanstack/react-router";
-import miami from "../assets/miami.jpg";
-import monaco from "../assets/monaco.webp";
-import austria from "../assets/austria.jpg";
-import britain from "../assets/britain.jpg";
-import hungary from "../assets/hungary.jpg";
-import azerbaijan from "../assets/azerbaijan.webp";
-import { Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from '@tanstack/react-router';
+import austria from '../assets/austria.jpg';
+import azerbaijan from '../assets/azerbaijan.webp';
+import britain from '../assets/britain.jpg';
+import hungary from '../assets/hungary.jpg';
+import miami from '../assets/miami.jpg';
+import monaco from '../assets/monaco.webp';
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute('/')({
   component: Home,
 });
 
 const tracks = [
-  { name: "Miami International Autodrome", img: miami, sessionKey: 9506 },
+  { name: 'Miami International Autodrome', img: miami, sessionKey: 9506 },
   {
-    name: "Circuit de Monaco",
+    name: 'Circuit de Monaco',
     img: monaco,
     sessionKey: 9523,
   },
-  { name: "Red Bull Ring", img: austria, sessionKey: 9550 },
+  { name: 'Red Bull Ring', img: austria, sessionKey: 9550 },
   {
-    name: "Silverstone",
+    name: 'Silverstone',
     img: britain,
     sessionKey: 9558,
   },
-  { name: "Hungaroring", img: hungary, sessionKey: 9566 },
+  { name: 'Hungaroring', img: hungary, sessionKey: 9566 },
   {
-    name: "Baku City Circuit",
+    name: 'Baku City Circuit',
     img: azerbaijan,
     sessionKey: 9598,
   },
