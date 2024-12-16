@@ -6,8 +6,8 @@ import "./index.css";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { persistQueryClient } from "@tanstack/react-query-persist-client";
+// import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+// import { persistQueryClient } from "@tanstack/react-query-persist-client";
 
 // Create a new router instance
 const router = createRouter({ routeTree });
@@ -30,15 +30,15 @@ const queryClient = new QueryClient({
   },
 });
 
-const localStoragePersister = createSyncStoragePersister({
-  storage: typeof window !== "undefined" ? window.localStorage : undefined,
-});
-// const sessionStoragePersister = createSyncStoragePersister({ storage: window.sessionStorage })
+// const localStoragePersister = createSyncStoragePersister({
+//   storage: typeof window !== "undefined" ? window.localStorage : undefined,
+// });
+// // const sessionStoragePersister = createSyncStoragePersister({ storage: window.sessionStorage })
 
-persistQueryClient({
-  queryClient,
-  persister: localStoragePersister,
-});
+// persistQueryClient({
+//   queryClient,
+//   persister: localStoragePersister,
+// });
 
 // Render the app
 const rootElement = document.getElementById("root")!;

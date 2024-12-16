@@ -1,11 +1,11 @@
-import { OptimizedLocation } from './types';
+import { OptimizedLocation } from "./types";
 
 export function chunkArray<T>(array: T[], numChunks: number): T[][] {
   if (numChunks <= 0) {
-    throw new Error('Number of chunks must be greater than 0');
+    throw new Error("Number of chunks must be greater than 0");
   }
   if (numChunks > array.length) {
-    throw new Error('Number of chunks cannot be greater than array length');
+    throw new Error("Number of chunks cannot be greater than array length");
   }
 
   const chunks: T[][] = [];
@@ -18,7 +18,7 @@ export function chunkArray<T>(array: T[], numChunks: number): T[][] {
   return chunks;
 }
 
-const CHUNKS_COUNT = 100;
+const CHUNKS_COUNT = 1000;
 
 const getLocationKey = (sessionKey: number, chunkIndex: number) => {
   return `locations-${sessionKey}-${chunkIndex}`;
