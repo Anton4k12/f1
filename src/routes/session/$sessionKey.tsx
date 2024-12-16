@@ -55,7 +55,7 @@ function Session() {
   console.log({ data });
   return (
     <div className="flex h-screen w-full items-center justify-center">
-      <div className=" w-full max-w-xl">
+      <div className="px-4 lg:px-0 w-full max-w-xl">
         {/* <F1CircuitMap clusterRadius={300} locations={data}></F1CircuitMap> */}
         <F1CircuitV2
           points={data.map((point) => {
