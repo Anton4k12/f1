@@ -1,14 +1,40 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import ky from "ky";
-import type { Session, Location } from "@/types";
+import { createFileRoute } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import ky from 'ky';
+import type { Session, Location } from '@/types';
 // import F1CircuitMap from "@/components/f1";
-import spinner from "@/assets/spinner.svg";
-import { F1CircuitV2 } from "@/components/f1v2";
+import spinner from '@/assets/spinner.svg';
+import { F1CircuitV2 } from '@/components/f1v2';
 
-export const Route = createFileRoute("/session/$sessionKey")({
+export const Route = createFileRoute('/session/$sessionKey')({
   component: Session,
 });
+
+const getLocationKey = (sessionKey: number) => {
+  return `locations-${sessionKey}`;
+};
+
+const readLocations = (sessionKey: number): Location[] => {
+  const locationsKey = getLocationKey(sessionKey);
+
+  const result = localStorage.getItem(locationsKey);
+
+  if (!result) {
+    return [];
+  }
+
+  return JSON.parse(result);
+};
+
+const saveLocations = (sessionKey: number, locations: Location[]) => {
+  const locationsKey = getLocationKey(sessionKey);
+  localStorage.setItem(locationsKey, JSON.stringify(locations));
+};
+
+const isLocationsAlreadyExist = (sessionKey: number) => {
+  const locationsKey = getLocationKey(sessionKey);
+  return Boolean(localStorage.getItem(locationsKey));
+};
 
 function Session() {
   // const { data, isLoading, error } = useQuery({
@@ -17,11 +43,23 @@ function Session() {
   // });
 
   const params = Route.useParams();
+  const numberSessionKey = Number(params.sessionKey);
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ["locations", params.sessionKey],
-    queryFn: () => {
-      if ()
-      return getLocations({ driverNumber: 81, sessionKey: Number(params.sessionKey) });
+    queryKey: ['locations', params.sessionKey],
+    queryFn: async () => {
+      if (isLocationsAlreadyExist(numberSessionKey)) {
+        return readLocations(numberSessionKey);
+      }
+
+      const fetchedLocations = await getLocations({
+        driverNumber: 81,
+        sessionKey: Number(params.sessionKey),
+      });
+
+      saveLocations(numberSessionKey, fetchedLocations);
+
+      return fetchedLocations;
     },
   });
 
@@ -69,7 +107,7 @@ async function getLocations(args: {
   driverNumber: number;
 }) {
   const locations = await ky
-    .get<Location[]>("https://api.openf1.org/v1/location", {
+    .get<Location[]>('https://api.openf1.org/v1/location', {
       searchParams: {
         session_key: args.sessionKey,
         driver_number: args.driverNumber,
