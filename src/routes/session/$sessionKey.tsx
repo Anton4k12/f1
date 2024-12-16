@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import ky from "ky";
 import type { Session, Location } from "@/types";
-import F1CircuitMap from "@/components/f1";
+// import F1CircuitMap from "@/components/f1";
 import spinner from "@/assets/spinner.svg";
+import { F1CircuitV2 } from "@/components/f1v2";
 
 export const Route = createFileRoute("/session/$sessionKey")({
   component: Session,
@@ -18,8 +19,10 @@ function Session() {
   const params = Route.useParams();
   const { data, isLoading, error } = useQuery({
     queryKey: ["locations", params.sessionKey],
-    queryFn: () =>
-      getLocations({ driverNumber: 81, sessionKey: Number(params.sessionKey) }),
+    queryFn: () => {
+      if ()
+      return getLocations({ driverNumber: 81, sessionKey: Number(params.sessionKey) });
+    },
   });
 
   console.log(data);
@@ -39,7 +42,12 @@ function Session() {
   console.log({ data });
   return (
     <div className="h-screen w-screen">
-      <F1CircuitMap clusterRadius={300} locations={data}></F1CircuitMap>
+      {/* <F1CircuitMap clusterRadius={300} locations={data}></F1CircuitMap> */}
+      <F1CircuitV2
+        points={data.map((point) => {
+          return { x: point.x, y: point.y };
+        })}
+      ></F1CircuitV2>
     </div>
   );
 }
