@@ -88,7 +88,7 @@ function Session() {
   // console.log({ data, isLoading });
   console.log({ locationsData });
   return (
-    <div className="flex px-4 lg:flex-row gap-10 lg:gap-0 min-h-screen flex-col w-full items-center justify-center">
+    <div className="flex px-4 lg:flex-row gap-10  min-h-screen flex-col w-full items-center justify-center">
       <div className="px-4 lg:px-0 w-full max-w-xl">
         {/* <F1CircuitMap clusterRadius={300} locations={data}></F1CircuitMap> */}
         <F1CircuitV2
