@@ -31,3 +31,12 @@ export type OptimizedLocation = {
   // t: number;
   // n: number;
 };
+
+export type Interval = {
+  date: string;
+  driver_number: number;
+  gap_to_leader: number;
+  interval: number;
+  meeting_key: number;
+  session_key: number;
+};

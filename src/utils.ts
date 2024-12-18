@@ -1,5 +1,3 @@
-import { OptimizedLocation } from "./types";
-
 export function chunkArray<T>(array: T[], numChunks: number): T[][] {
   if (numChunks <= 0) {
     throw new Error("Number of chunks must be greater than 0");
@@ -20,36 +18,36 @@ export function chunkArray<T>(array: T[], numChunks: number): T[][] {
 
 const CHUNKS_COUNT = 1000;
 
-const getLocationKey = (sessionKey: number, chunkIndex: number) => {
-  return `locations-${sessionKey}-${chunkIndex}`;
+const getCacheKey = (cacheKey: string, chunkIndex: number) => {
+  return `cache-${cacheKey}-${chunkIndex}`;
 };
 
-const readLocations = (sessionKey: number): OptimizedLocation[] => {
-  const result: OptimizedLocation[] = [];
+const readFromCache = (cacheKey: string): unknown[] => {
+  const result: unknown[] = [];
 
   for (let i = 0; i < CHUNKS_COUNT; i++) {
-    const locationsKey = getLocationKey(sessionKey, i);
+    const locationsKey = getCacheKey(cacheKey, i);
     const rawChunk = localStorage.getItem(locationsKey) as string | null;
     if (!rawChunk) continue;
-    const chunk = JSON.parse(rawChunk) as OptimizedLocation[];
+    const chunk = JSON.parse(rawChunk) as unknown[];
     result.push(...chunk);
   }
 
   return result;
 };
 
-const saveLocations = (sessionKey: number, locations: OptimizedLocation[]) => {
-  const chunkedLocations = chunkArray(locations, CHUNKS_COUNT);
+const saveToCache = (cacheKey: string, data: unknown[]) => {
+  const chunkedLocations = chunkArray(data, CHUNKS_COUNT);
 
   chunkedLocations.forEach((chunk, i) => {
-    const locationsKey = getLocationKey(sessionKey, i);
+    const locationsKey = getCacheKey(cacheKey, i);
     localStorage.setItem(locationsKey, JSON.stringify(chunk));
   });
 };
 
-const isLocationsAlreadyExist = (sessionKey: number) => {
-  const locationsKey = getLocationKey(sessionKey, 0);
+const isCacheAlreadyExist = (cacheKey: string) => {
+  const locationsKey = getCacheKey(cacheKey, 0);
   return Boolean(localStorage.getItem(locationsKey));
 };
 
-export { isLocationsAlreadyExist, readLocations, saveLocations };
+export { isCacheAlreadyExist, readFromCache, saveToCache };

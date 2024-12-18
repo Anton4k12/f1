@@ -71,7 +71,7 @@ const F1CircuitV2: React.FC<PathProps> = ({
 
   return (
     <svg
-      className="max-h-screen"
+      className="max-h-screen py-5"
       viewBox={viewBox}
       xmlns="http://www.w3.org/2000/svg"
     >
