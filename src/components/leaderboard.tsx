@@ -87,7 +87,10 @@ export const Leaderboard = ({
   const [parent] = useAutoAnimate(/* optional config */);
 
   return (
-    <div ref={parent} className="flex w-1/4 gap-1 flex-col">
+    <div
+      ref={parent}
+      className="flex lg:w-1/4 w-full pb-4 lg:pb-0 gap-1 flex-col"
+    >
       <div>{currentDate.toLocaleTimeString()}</div>
       <div className="grid grid-cols-3 text-sm rounded-full px-2 py-1">
         <div className="col-span-1">Position</div>
