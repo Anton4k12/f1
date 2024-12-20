@@ -1,4 +1,4 @@
-import type { Interval, Location, Session } from "@/types";
+import type { Location, Position, Session } from "@/types";
 import { createFileRoute } from "@tanstack/react-router";
 import ky from "ky";
 // import F1CircuitMap from "@/components/f1";
@@ -46,29 +46,39 @@ function Session() {
     },
   });
 
+  // const {
+  //   data: intervalsData,
+  //   isLoading: isIntervalsLoading,
+  //   error: intervalsError,
+  // } = useQuery({
+  //   queryKey: ["intervals", sessionKey],
+
+  //   queryFn: async () => {
+  //     const cacheKey = `intervals-${sessionKey}`;
+
+  //     if (isCacheAlreadyExist(cacheKey)) {
+  //       return readFromCache(cacheKey) as Interval[];
+  //     }
+
+  //     const intervals = await getIntervals(sessionKey);
+
+  //     saveToCache(cacheKey, intervals);
+
+  //     return intervals;
+  //   },
+  // });
+
   const {
-    data: intervalsData,
-    isLoading: isIntervalsLoading,
-    error: intervalsError,
+    data: positionsData,
+    isLoading: isPositionsLoading,
+    error: positionsError,
   } = useQuery({
-    queryKey: ["intervals", sessionKey],
+    queryKey: ["position", sessionKey],
 
-    queryFn: async () => {
-      const cacheKey = `intervals-${sessionKey}`;
-
-      if (isCacheAlreadyExist(cacheKey)) {
-        return readFromCache(cacheKey) as Interval[];
-      }
-
-      const intervals = await getIntervals(sessionKey);
-
-      saveToCache(cacheKey, intervals);
-
-      return intervals;
-    },
+    queryFn: () => getPositions(sessionKey),
   });
 
-  if (isLocationsLoading || isSessionLoading || isIntervalsLoading) {
+  if (isLocationsLoading || isSessionLoading || isPositionsLoading) {
     return (
       <div className="flex font-medium items-center gap-2 justify-center h-screen">
         Loading the track
@@ -82,11 +92,11 @@ function Session() {
   if (sessionError || !sessionData) {
     return <pre>{sessionError?.message}</pre>;
   }
-  if (intervalsError || !intervalsData) {
-    return <pre>{intervalsError?.message}</pre>;
+  if (positionsError || !positionsData) {
+    return <pre>{positionsError?.message}</pre>;
   }
   // console.log({ data, isLoading });
-  console.log({ locationsData });
+  // console.log({ locationsData });
   return (
     <div className="flex px-4 lg:flex-row gap-10  min-h-screen flex-col w-full items-center justify-center">
       <div className="px-4 lg:px-0 w-full max-w-xl">
@@ -100,22 +110,34 @@ function Session() {
       {/* <pre>{JSON.stringify(sessionData, null, 2)}</pre> */}
       <Leaderboard
         dateStart={sessionData.date_start}
-        intervalsData={intervalsData}
+        positions={positionsData}
       ></Leaderboard>
     </div>
   );
 }
 
-async function getIntervals(sessionKey: number) {
-  const intervals = await ky
-    .get<Interval[]>("https://api.openf1.org/v1/intervals", {
+// async function getIntervals(sessionKey: number) {
+//   const intervals = await ky
+//     .get<Interval[]>("https://api.openf1.org/v1/intervals", {
+//       searchParams: {
+//         session_key: sessionKey,
+//       },
+//     })
+//     .json();
+
+//   return intervals;
+// }
+
+async function getPositions(sessionKey: number) {
+  const positions = await ky
+    .get<Position[]>("https://api.openf1.org/v1/position", {
       searchParams: {
         session_key: sessionKey,
       },
     })
     .json();
 
-  return intervals;
+  return positions;
 }
 
 async function getSession(sessionKey: number) {

@@ -1,3 +1,5 @@
+import { Position } from "./types";
+
 export function chunkArray<T>(array: T[], numChunks: number): T[][] {
   if (numChunks <= 0) {
     throw new Error("Number of chunks must be greater than 0");
@@ -51,3 +53,35 @@ const isCacheAlreadyExist = (cacheKey: string) => {
 };
 
 export { isCacheAlreadyExist, readFromCache, saveToCache };
+
+export function getPositionsAtTimestamp(date: Date, data: Position[]) {
+  const targetDate = new Date(date);
+  targetDate.setMilliseconds(0);
+
+  const filteredData = data.filter((update) => {
+    const updateDate = new Date(update.date);
+    return updateDate <= targetDate;
+  });
+
+  const positions: Record<number, number> = {};
+
+  filteredData.forEach((posData) => {
+    const driverNumber = posData.driver_number;
+    const position = posData.position;
+
+    positions[position] = driverNumber;
+  });
+
+  return positions;
+}
+
+export const getPositionChange = (
+  prevPosition: number,
+  newPosition: number
+) => {
+  if (newPosition > prevPosition) {
+    return "up";
+  }
+  if (newPosition < prevPosition) return "down";
+  return "same";
+};

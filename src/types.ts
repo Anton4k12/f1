@@ -40,3 +40,11 @@ export type Interval = {
   meeting_key: number;
   session_key: number;
 };
+
+export type Position = {
+  session_key: number;
+  meeting_key: number;
+  driver_number: number;
+  date: string;
+  position: number;
+};

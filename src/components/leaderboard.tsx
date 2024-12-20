@@ -1,148 +1,115 @@
-import { useState, useEffect } from "react";
+import { Position } from "@/types";
+import { useState } from "react";
+import triangleUp from "@/assets/triangleUp.svg";
+import triangleDown from "@/assets/triangleDown.svg";
+import { useInterval } from "usehooks-ts";
+import { getPositionChange, getPositionsAtTimestamp } from "@/utils";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { Interval } from "@/types";
 
-interface DriverPosition extends Interval {
-  position: number;
-  previousPosition?: number;
-  positionChange?: "up" | "down" | "same";
-}
+let i = 0;
 
 export const Leaderboard = ({
+  positions,
   dateStart,
-  intervalsData,
 }: {
+  positions: Position[];
   dateStart: string;
-  intervalsData: Interval[];
 }) => {
-  const [leaderboardState, setLeaderboardState] = useState<DriverPosition[]>(
-    []
-  );
-  const [currentIntervalIndex, setCurrentIntervalIndex] = useState(0);
-  const [currentTime, setCurrentTime] = useState<string | null>(null);
-  const [parentRef] = useAutoAnimate<HTMLDivElement>(); // Initialize AutoAnimate for the parent container
+  const initialPositions = positions.filter((position) => {
+    if (new Date(position.date) <= new Date(dateStart)) {
+      return true;
+    }
 
-  useEffect(() => {
-    if (!intervalsData || intervalsData.length === 0) return;
+    return false;
+  });
 
-    const startDate = new Date(dateStart);
+  const initialLeaderboard = initialPositions.map((pos) => {
+    return {
+      driverNumber: pos.driver_number,
+      position: pos.position,
+      positionChange: "same",
+    };
+  });
 
-    // Sort and filter intervals once
-    const sortedIntervals = intervalsData
-      .filter((inter) => new Date(inter.date) > startDate)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const [leaderboard, setLeaderboard] = useState(initialLeaderboard);
+  const [currentDate, setCurrentDate] = useState(new Date(dateStart));
 
-    if (sortedIntervals.length === 0) return;
+  const sortedLeaderboard = leaderboard.sort((a, b) => {
+    return a.position - b.position;
+  });
 
-    const intervalId = setInterval(() => {
-      // Stop if we've processed all intervals
-      if (currentIntervalIndex >= sortedIntervals.length) {
-        clearInterval(intervalId);
-        return;
-      }
+  const raceStartedPositions = positions.filter((driver) => {
+    if (new Date(driver.date) >= new Date(dateStart)) {
+      return true;
+    }
+    return false;
+  });
 
-      // Get current interval
-      const interval = sortedIntervals[currentIntervalIndex];
+  const raceStartedDates = raceStartedPositions.map((pos) => {
+    return new Date(pos.date);
+  });
 
-      setLeaderboardState((prevState) => {
-        const updatedLeaderboard = [...prevState];
+  const uniqueDates = Array.from(new Set(raceStartedDates));
 
-        // Find existing driver entry
-        const existingDriverIndex = updatedLeaderboard.findIndex(
-          (entry) => entry.driver_number === interval.driver_number
-        );
+  useInterval(() => {
+    if (i > uniqueDates.length - 1) return;
 
-        const driverEntry: DriverPosition = {
-          ...interval,
-          position: 0,
-          previousPosition:
-            existingDriverIndex !== -1
-              ? updatedLeaderboard[existingDriverIndex].position
-              : undefined,
+    const date = uniqueDates[i];
+
+    setCurrentDate(date);
+
+    const newPositions = getPositionsAtTimestamp(date, positions);
+
+    const positionsToSet = Object.entries(newPositions).map((pos) => {
+      return { driverNumber: pos[1], position: pos[0] };
+    });
+
+    setLeaderboard((prevLeaderboard) => {
+      const newLeaderboard = positionsToSet.map((driver) => {
+        const prevPosition = prevLeaderboard.find((prevDriver) => {
+          return driver.driverNumber === prevDriver.driverNumber;
+        })?.position;
+
+        return {
+          driverNumber: driver.driverNumber,
+          position: Number(driver.position),
+          positionChange: prevPosition
+            ? getPositionChange(prevPosition, Number(driver.position))
+            : "same",
         };
-
-        // Remove existing entry if found
-        if (existingDriverIndex !== -1) {
-          updatedLeaderboard.splice(existingDriverIndex, 1);
-        }
-
-        // Add updated entry
-        updatedLeaderboard.push(driverEntry);
-
-        // Sort by gap to leader
-        updatedLeaderboard.sort(
-          (a, b) =>
-            (a.gap_to_leader ?? Infinity) - (b.gap_to_leader ?? Infinity)
-        );
-
-        // Reassign positions and calculate changes
-        updatedLeaderboard.forEach((entry, index) => {
-          entry.position = index + 1;
-
-          if (entry.previousPosition !== undefined) {
-            if (entry.position < entry.previousPosition) {
-              entry.positionChange = "up";
-            } else if (entry.position > entry.previousPosition) {
-              entry.positionChange = "down";
-            } else {
-              entry.positionChange = "same";
-            }
-          }
-        });
-
-        return updatedLeaderboard;
       });
+      return newLeaderboard;
+    });
 
-      // Update the displayed current time
-      setCurrentTime(new Date(interval.date).toLocaleTimeString());
+    i++;
+  }, 100);
 
-      // Move to the next interval
-      setCurrentIntervalIndex((prev) => prev + 1);
-    }, 300);
-
-    return () => clearInterval(intervalId);
-  }, [intervalsData, dateStart, currentIntervalIndex]);
+  const [parent] = useAutoAnimate(/* optional config */);
 
   return (
-    <div className="bg-gray-100 p-4 rounded-lg w-full lg:max-w-md shadow-md  ">
-      <h2 className="text-2xl font-bold mb-1 text-gray-800">
-        Race Leaderboard
-      </h2>
-      <div className="text-lg mb-2 text-gray-600">
-        <strong>Current Time: </strong> {currentTime || "Waiting for data..."}
+    <div ref={parent} className="flex w-1/4 gap-1 flex-col">
+      <div>{currentDate.toLocaleTimeString()}</div>
+      <div className="grid grid-cols-3 text-sm rounded-full px-2 py-1">
+        <div className="col-span-1">Position</div>
+        <div className="col-span-1 whitespace-nowrap">Driver Number</div>
+        <div className="col-span-1 text-right">Position Change</div>
       </div>
-      <div
-        ref={parentRef}
-        className="flex flex-col gap-1 overflow-y-visible h-full"
-      >
-        {leaderboardState.map((driver) => (
+      {sortedLeaderboard.map((driver) => {
+        return (
           <div
-            key={driver.driver_number}
-            className="bg-white px-2 h-8 rounded-lg shadow-sm border border-gray-300 flex items-center justify-between text-sm hover:shadow-md transition-transform transform hover:scale-105"
+            key={driver.driverNumber}
+            className="grid grid-cols-3 border text-sm rounded-full px-2 py-1 justify-between"
           >
-            <div className="font-semibold text-gray-800">
-              #{driver.position}
-            </div>
-            <div className="text-gray-600">Driver {driver.driver_number}</div>
-            <div className="text-right text-gray-800">
-              {driver.gap_to_leader !== null
-                ? `${driver.gap_to_leader.toFixed(3)} sec`
-                : "N/A"}
-            </div>
-            <div className="text-center">
-              {driver.positionChange === "up" && (
-                <span className="text-green-500 text-lg">▲</span>
-              )}
-              {driver.positionChange === "down" && (
-                <span className="text-red-500 text-lg">▼</span>
-              )}
-              {driver.positionChange === "same" && (
-                <span className="text-gray-500 text-lg">-</span>
-              )}
+            <div className="col-span-1">#{driver.position}</div>
+            <div className="col-span-1">{driver.driverNumber}</div>
+            <div className="col-span-1 flex justify-end">
+              {driver.positionChange === "same" && "—"}
+              {driver.positionChange === "down" && <img src={triangleUp}></img>}
+              {driver.positionChange === "up" && <img src={triangleDown}></img>}
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 };
