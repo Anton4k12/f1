@@ -82,7 +82,7 @@ export const Leaderboard = ({
     });
 
     i++;
-  }, 100);
+  }, 1000);
 
   const [parent] = useAutoAnimate(/* optional config */);
 

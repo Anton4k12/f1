@@ -1,57 +1,73 @@
 import { Position } from "./types";
 
-export function chunkArray<T>(array: T[], numChunks: number): T[][] {
-  if (numChunks <= 0) {
-    throw new Error("Number of chunks must be greater than 0");
-  }
-  if (numChunks > array.length) {
-    throw new Error("Number of chunks cannot be greater than array length");
-  }
-
-  const chunks: T[][] = [];
-  const chunkSize = Math.ceil(array.length / numChunks);
-
+// Splits an array into chunks of a specific size
+export function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  const chunkiees: T[][] = [];
   for (let i = 0; i < array.length; i += chunkSize) {
-    chunks.push(array.slice(i, Math.min(i + chunkSize, array.length)));
+    chunkiees.push(array.slice(i, i + chunkSize));
   }
-
-  return chunks;
+  return chunkiees;
 }
 
-const CHUNKS_COUNT = 1000;
+const CHUNK_SIZE = 20;
 
+// Generates a cache key for storing data
 const getCacheKey = (cacheKey: string, chunkIndex: number) => {
   return `cache-${cacheKey}-${chunkIndex}`;
 };
 
+// Reads all chunks of data from localStorage for a given cache key
 const readFromCache = (cacheKey: string): unknown[] => {
   const result: unknown[] = [];
+  let chunkIndex = 0;
 
-  for (let i = 0; i < CHUNKS_COUNT; i++) {
-    const locationsKey = getCacheKey(cacheKey, i);
-    const rawChunk = localStorage.getItem(locationsKey) as string | null;
-    if (!rawChunk) continue;
-    const chunk = JSON.parse(rawChunk) as unknown[];
-    result.push(...chunk);
+  while (true) {
+    const locationsKey = getCacheKey(cacheKey, chunkIndex);
+    const rawChunk = localStorage.getItem(locationsKey);
+
+    if (!rawChunk) break; // Stop if no more chunks exist
+
+    try {
+      const chunk = JSON.parse(rawChunk) as unknown[];
+      if (Array.isArray(chunk)) {
+        result.push(...chunk);
+      } else {
+        console.warn(`Invalid data format in chunk: ${locationsKey}`);
+      }
+    } catch (error) {
+      console.error(`Error parsing chunk: ${locationsKey}`, error);
+    }
+
+    chunkIndex++;
   }
 
   return result;
 };
 
-const saveToCache = (cacheKey: string, data: unknown[]) => {
-  const chunkedLocations = chunkArray(data, CHUNKS_COUNT);
+// Saves data to localStorage in chunks
+const saveToCache = <T>(cacheKey: string, data: T[]) => {
+  const chunkedLocations = chunkArray(data, CHUNK_SIZE);
 
   chunkedLocations.forEach((chunk, i) => {
     const locationsKey = getCacheKey(cacheKey, i);
     localStorage.setItem(locationsKey, JSON.stringify(chunk));
   });
+
+  // Optionally, clear unused chunks beyond the current data size
+  let extraChunkIndex = chunkedLocations.length;
+  while (localStorage.getItem(getCacheKey(cacheKey, extraChunkIndex))) {
+    localStorage.removeItem(getCacheKey(cacheKey, extraChunkIndex));
+    extraChunkIndex++;
+  }
 };
 
+// Checks if any cache exists for the provided key
 const isCacheAlreadyExist = (cacheKey: string) => {
   const locationsKey = getCacheKey(cacheKey, 0);
   return Boolean(localStorage.getItem(locationsKey));
 };
 
+// Export the utilities
 export { isCacheAlreadyExist, readFromCache, saveToCache };
 
 export function getPositionsAtTimestamp(date: Date, data: Position[]) {

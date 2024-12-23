@@ -3,10 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import ky from "ky";
 // import F1CircuitMap from "@/components/f1";
 import spinner from "@/assets/spinner.svg";
-import { F1CircuitV2 } from "@/components/f1v2";
+// import { F1CircuitV2 } from "@/components/f1v2";
 import { useQuery } from "@tanstack/react-query";
 import { isCacheAlreadyExist, readFromCache, saveToCache } from "@/utils";
-import { Leaderboard } from "@/components/leaderboard";
+// import { Leaderboard } from "@/components/leaderboard";
 
 export const Route = createFileRoute("/session/$sessionKey")({
   component: Session,
@@ -37,10 +37,7 @@ function Session() {
       if (isCacheAlreadyExist(cacheKey)) {
         return readFromCache(cacheKey) as Location[];
       }
-      const locations = await getLocations({
-        sessionKey: sessionKey,
-        driverNumber: 81,
-      });
+      const locations = await getLocations(sessionKey, [81, 4]);
       saveToCache(cacheKey, locations);
       return locations;
     },
@@ -96,22 +93,22 @@ function Session() {
     return <pre>{positionsError?.message}</pre>;
   }
   // console.log({ data, isLoading });
-  // console.log({ locationsData });
+  console.log({ locationsData });
   return (
     <div className="flex px-4 lg:flex-row gap-10  min-h-screen flex-col w-full items-center justify-center">
       <div className="px-4 lg:px-0 w-full max-w-xl">
         {/* <F1CircuitMap clusterRadius={300} locations={data}></F1CircuitMap> */}
-        <F1CircuitV2
+        {/* <F1CircuitV2
           points={locationsData.map((point) => {
             return { x: point.x, y: point.y };
           })}
-        ></F1CircuitV2>
+        ></F1CircuitV2> */}
       </div>
       {/* <pre>{JSON.stringify(sessionData, null, 2)}</pre> */}
-      <Leaderboard
+      {/* <Leaderboard
         dateStart={sessionData.date_start}
         positions={positionsData}
-      ></Leaderboard>
+      ></Leaderboard> */}
     </div>
   );
 }
@@ -152,25 +149,30 @@ async function getSession(sessionKey: number) {
   return sessions[0];
 }
 
-async function getLocations(args: {
-  sessionKey: number;
-  driverNumber: number;
-}) {
-  const locations = await ky
-    .get<Location[]>("https://api.openf1.org/v1/location", {
-      searchParams: {
-        session_key: args.sessionKey,
-        driver_number: args.driverNumber,
-      },
-    })
-    .json();
+// getLocations({sessionKey: 9662, drivers: [1, 44]})
 
-  return locations.map((location) => {
+async function getLocations(sessionKey: number, drivers: number[]) {
+  const locationsPromises = drivers.map(async (driverNumber) => {
+    const locations = await ky
+      .get<Location[]>("https://api.openf1.org/v1/location", {
+        searchParams: {
+          session_key: sessionKey,
+          driver_number: driverNumber,
+        },
+      })
+      .json();
+    return locations;
+  });
+
+  const locations = await Promise.all(locationsPromises);
+  const dixi = locations.flat();
+
+  return dixi.map((location) => {
     return {
       x: location.x,
       y: location.y,
-      // t: new Date(location.date).getTime(),
-      // n: location.driver_number,
+      t: new Date(location.date).getTime(),
+      n: location.driver_number,
     };
   });
 }
