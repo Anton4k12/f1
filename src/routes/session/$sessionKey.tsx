@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import ky from "ky";
 // import F1CircuitMap from "@/components/f1";
 import spinner from "@/assets/spinner.svg";
-// import { F1CircuitV2 } from "@/components/f1v2";
+import { F1CircuitV2 } from "@/components/f1v2";
 import { useQuery } from "@tanstack/react-query";
 import { isCacheAlreadyExist, readFromCache, saveToCache } from "@/utils";
 // import { Leaderboard } from "@/components/leaderboard";
@@ -34,11 +34,12 @@ function Session() {
     queryKey: ["locations", params.sessionKey],
     queryFn: async () => {
       const cacheKey = `locations-${sessionKey}`;
-      if (isCacheAlreadyExist(cacheKey)) {
-        return readFromCache(cacheKey) as Location[];
+      const cacheExists = await isCacheAlreadyExist(cacheKey);
+      if (cacheExists) {
+        return await readFromCache<Location>(cacheKey);
       }
       const locations = await getLocations(sessionKey, [81, 4]);
-      saveToCache(cacheKey, locations);
+      await saveToCache(cacheKey, locations);
       return locations;
     },
   });
@@ -98,11 +99,11 @@ function Session() {
     <div className="flex px-4 lg:flex-row gap-10  min-h-screen flex-col w-full items-center justify-center">
       <div className="px-4 lg:px-0 w-full max-w-xl">
         {/* <F1CircuitMap clusterRadius={300} locations={data}></F1CircuitMap> */}
-        {/* <F1CircuitV2
+        <F1CircuitV2
           points={locationsData.map((point) => {
             return { x: point.x, y: point.y };
           })}
-        ></F1CircuitV2> */}
+        ></F1CircuitV2>
       </div>
       {/* <pre>{JSON.stringify(sessionData, null, 2)}</pre> */}
       {/* <Leaderboard

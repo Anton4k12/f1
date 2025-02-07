@@ -1,8 +1,7 @@
 import { Position } from "@/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import triangleUp from "@/assets/triangleUp.svg";
 import triangleDown from "@/assets/triangleDown.svg";
-import { useInterval } from "usehooks-ts";
 import { getPositionChange, getPositionsAtTimestamp } from "@/utils";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 
@@ -51,38 +50,47 @@ export const Leaderboard = ({
 
   const uniqueDates = Array.from(new Set(raceStartedDates));
 
-  useInterval(() => {
-    if (i > uniqueDates.length - 1) return;
+  useEffect(() => {
+    if (i >= uniqueDates.length - 1) return;
 
-    const date = uniqueDates[i];
+    const updatePosition = () => {
+      const date = uniqueDates[i];
+      setCurrentDate(date);
 
-    setCurrentDate(date);
-
-    const newPositions = getPositionsAtTimestamp(date, positions);
-
-    const positionsToSet = Object.entries(newPositions).map((pos) => {
-      return { driverNumber: pos[1], position: pos[0] };
-    });
-
-    setLeaderboard((prevLeaderboard) => {
-      const newLeaderboard = positionsToSet.map((driver) => {
-        const prevPosition = prevLeaderboard.find((prevDriver) => {
-          return driver.driverNumber === prevDriver.driverNumber;
-        })?.position;
-
-        return {
-          driverNumber: driver.driverNumber,
-          position: Number(driver.position),
-          positionChange: prevPosition
-            ? getPositionChange(prevPosition, Number(driver.position))
-            : "same",
-        };
+      const newPositions = getPositionsAtTimestamp(date, positions);
+      const positionsToSet = Object.entries(newPositions).map((pos) => {
+        return { driverNumber: pos[1], position: pos[0] };
       });
-      return newLeaderboard;
-    });
 
-    i++;
-  }, 1000);
+      setLeaderboard((prevLeaderboard) => {
+        const newLeaderboard = positionsToSet.map((driver) => {
+          const prevPosition = prevLeaderboard.find((prevDriver) => {
+            return driver.driverNumber === prevDriver.driverNumber;
+          })?.position;
+
+          return {
+            driverNumber: driver.driverNumber,
+            position: Number(driver.position),
+            positionChange: prevPosition
+              ? getPositionChange(prevPosition, Number(driver.position))
+              : "same",
+          };
+        });
+        return newLeaderboard;
+      });
+
+      const currentTimestamp = uniqueDates[i].getTime();
+      const nextTimestamp = uniqueDates[i + 1].getTime();
+      const timeToNextUpdate = nextTimestamp - currentTimestamp;
+
+      i++;
+      if (i < uniqueDates.length - 1) {
+        setTimeout(updatePosition, timeToNextUpdate);
+      }
+    };
+
+    updatePosition();
+  }, []); // Run once on component mount
 
   const [parent] = useAutoAnimate(/* optional config */);
 

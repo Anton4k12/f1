@@ -9,66 +9,84 @@ export function chunkArray<T>(array: T[], chunkSize: number): T[][] {
   return chunkiees;
 }
 
-const CHUNK_SIZE = 20;
+const DB_NAME = "f1-cache";
+const STORE_NAME = "cache-store";
+const DB_VERSION = 1;
 
-// Generates a cache key for storing data
-const getCacheKey = (cacheKey: string, chunkIndex: number) => {
-  return `cache-${cacheKey}-${chunkIndex}`;
-};
+// Initialize IndexedDB
+const initDB = async () => {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-// Reads all chunks of data from localStorage for a given cache key
-const readFromCache = (cacheKey: string): unknown[] => {
-  const result: unknown[] = [];
-  let chunkIndex = 0;
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
 
-  while (true) {
-    const locationsKey = getCacheKey(cacheKey, chunkIndex);
-    const rawChunk = localStorage.getItem(locationsKey);
-
-    if (!rawChunk) break; // Stop if no more chunks exist
-
-    try {
-      const chunk = JSON.parse(rawChunk) as unknown[];
-      if (Array.isArray(chunk)) {
-        result.push(...chunk);
-      } else {
-        console.warn(`Invalid data format in chunk: ${locationsKey}`);
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
       }
-    } catch (error) {
-      console.error(`Error parsing chunk: ${locationsKey}`, error);
-    }
-
-    chunkIndex++;
-  }
-
-  return result;
-};
-
-// Saves data to localStorage in chunks
-const saveToCache = <T>(cacheKey: string, data: T[]) => {
-  const chunkedLocations = chunkArray(data, CHUNK_SIZE);
-
-  chunkedLocations.forEach((chunk, i) => {
-    const locationsKey = getCacheKey(cacheKey, i);
-    localStorage.setItem(locationsKey, JSON.stringify(chunk));
+    };
   });
+};
 
-  // Optionally, clear unused chunks beyond the current data size
-  let extraChunkIndex = chunkedLocations.length;
-  while (localStorage.getItem(getCacheKey(cacheKey, extraChunkIndex))) {
-    localStorage.removeItem(getCacheKey(cacheKey, extraChunkIndex));
-    extraChunkIndex++;
+// Read data from IndexedDB
+export const readFromCache = async <T>(cacheKey: string): Promise<T[]> => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readonly");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get(cacheKey);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result || []);
+    });
+  } catch (error) {
+    console.error("Error reading from cache:", error);
+    return [];
   }
 };
 
-// Checks if any cache exists for the provided key
-const isCacheAlreadyExist = (cacheKey: string) => {
-  const locationsKey = getCacheKey(cacheKey, 0);
-  return Boolean(localStorage.getItem(locationsKey));
+// Save data to IndexedDB
+export const saveToCache = async <T>(
+  cacheKey: string,
+  data: T[]
+): Promise<void> => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.put(data, cacheKey);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  } catch (error) {
+    console.error("Error saving to cache:", error);
+  }
 };
 
-// Export the utilities
-export { isCacheAlreadyExist, readFromCache, saveToCache };
+// Check if cache exists in IndexedDB
+export const isCacheAlreadyExist = async (
+  cacheKey: string
+): Promise<boolean> => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readonly");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.count(cacheKey);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result > 0);
+    });
+  } catch (error) {
+    console.error("Error checking cache existence:", error);
+    return false;
+  }
+};
 
 export function getPositionsAtTimestamp(date: Date, data: Position[]) {
   const targetDate = new Date(date);
