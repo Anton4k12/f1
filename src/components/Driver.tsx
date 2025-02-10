@@ -99,8 +99,8 @@ export const Driver: React.FC<DriverProps> = ({
     <div
       className="absolute w-4 h-4 rounded-full bg-red-500 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-16"
       style={{
-        left: `${currentPosition.x / 50}px`,
-        top: `${currentPosition.y / 50}px`,
+        left: `${currentPosition.x / 35 + 475}px`,
+        top: `${currentPosition.y / 35 + 325}px`,
       }}
     />
   );
