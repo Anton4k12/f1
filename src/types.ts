@@ -28,8 +28,8 @@ export type Location = {
 export type OptimizedLocation = {
   x: number;
   y: number;
-  // t: number;
-  // n: number;
+  t: number;
+  n: number;
 };
 
 export type Interval = {

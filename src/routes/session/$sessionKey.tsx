@@ -1,12 +1,14 @@
-import type { Location, Position, Session } from "@/types";
+import type { Location, Position, Session, OptimizedLocation } from "@/types";
 import { createFileRoute } from "@tanstack/react-router";
 import ky from "ky";
 // import F1CircuitMap from "@/components/f1";
 import spinner from "@/assets/spinner.svg";
 import { F1CircuitV2 } from "@/components/f1v2";
+import { Driver } from "@/components/Driver";
 import { useQuery } from "@tanstack/react-query";
 import { isCacheAlreadyExist, readFromCache, saveToCache } from "@/utils";
 // import { Leaderboard } from "@/components/leaderboard";
+import { useState } from "react";
 
 export const Route = createFileRoute("/session/$sessionKey")({
   component: Session,
@@ -14,6 +16,8 @@ export const Route = createFileRoute("/session/$sessionKey")({
 
 function Session() {
   const params = Route.useParams();
+  const [currentTime, setCurrentTime] = useState(0);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
 
   const sessionKey = Number(params.sessionKey);
 
@@ -30,13 +34,13 @@ function Session() {
     data: locationsData,
     isLoading: isLocationsLoading,
     error: locationsError,
-  } = useQuery({
+  } = useQuery<OptimizedLocation[]>({
     queryKey: ["locations", params.sessionKey],
     queryFn: async () => {
       const cacheKey = `locations-${sessionKey}`;
       const cacheExists = await isCacheAlreadyExist(cacheKey);
       if (cacheExists) {
-        return await readFromCache<Location>(cacheKey);
+        return await readFromCache<OptimizedLocation>(cacheKey);
       }
       const locations = await getLocations(sessionKey, [81, 4]);
       await saveToCache(cacheKey, locations);
@@ -76,6 +80,13 @@ function Session() {
     queryFn: () => getPositions(sessionKey),
   });
 
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
+
   if (isLocationsLoading || isSessionLoading || isPositionsLoading) {
     return (
       <div className="flex font-medium items-center gap-2 justify-center h-screen">
@@ -98,12 +109,34 @@ function Session() {
   return (
     <div className="flex px-4 lg:flex-row gap-10  min-h-screen flex-col w-full items-center justify-center">
       <div className="px-4 lg:px-0 w-full max-w-xl">
-        {/* <F1CircuitMap clusterRadius={300} locations={data}></F1CircuitMap> */}
+        <div className="text-center mb-4">
+          <div className="text-2xl font-bold">
+            Race Time: {formatTime(currentTime)}
+          </div>
+          <div className="mt-4 flex items-center justify-center gap-4">
+            <span className="text-sm">Speed: {speedMultiplier}x</span>
+            <input
+              type="range"
+              min="0.25"
+              max="1000"
+              step="0.25"
+              value={speedMultiplier}
+              onChange={(e) => setSpeedMultiplier(Number(e.target.value))}
+              className="w-48"
+            />
+          </div>
+        </div>
         <F1CircuitV2
           points={locationsData.map((point) => {
             return { x: point.x, y: point.y };
           })}
-        ></F1CircuitV2>
+        >
+          <Driver
+            locations={locationsData.filter((loc) => loc.n === 81)}
+            onTimeUpdate={setCurrentTime}
+            speedMultiplier={speedMultiplier}
+          />
+        </F1CircuitV2>
       </div>
       {/* <pre>{JSON.stringify(sessionData, null, 2)}</pre> */}
       {/* <Leaderboard

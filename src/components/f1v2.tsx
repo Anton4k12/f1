@@ -51,11 +51,12 @@ function pointsToSVGPath(points: Point[]): string {
   return pathCommands.join(" ");
 }
 
-const F1CircuitV2: React.FC<PathProps> = ({
+const F1CircuitV2: React.FC<PathProps & { children?: React.ReactNode }> = ({
   points,
   padding = 10,
   strokeWidth = 2,
   strokeColor = "black",
+  children,
 }) => {
   if (points.length < 2) {
     return null;
@@ -70,18 +71,21 @@ const F1CircuitV2: React.FC<PathProps> = ({
   const viewBox = `${bounds.minX - padding} ${bounds.minY - padding} ${width + padding * 2} ${height + padding * 2}`;
 
   return (
-    <svg
-      className="max-h-screen py-5"
-      viewBox={viewBox}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d={pathData}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth={strokeWidth}
-      />
-    </svg>
+    <div className="relative w-full">
+      <svg
+        className="max-h-screen py-5 w-full"
+        viewBox={viewBox}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d={pathData}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
+        />
+      </svg>
+      <div className="absolute inset-0">{children}</div>
+    </div>
   );
 };
 
